@@ -21,10 +21,10 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	"strings"
 
 	"github.com/containers/build/util"
 
+	digest "github.com/opencontainers/go-digest"
 	ociImage "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
@@ -79,13 +79,10 @@ func LoadImage(ociPath string) (*Image, error) {
 	if err != nil {
 		return nil, err
 	}
-	manifestHashAlgo, manifestHash, err := splitHash(i.ref.Digest)
-	if err != nil {
-		return nil, err
-	}
+	manifestHash := i.ref.Digest
 
 	// Open the manifest, read it, unmarshal it, and parse the config's hash
-	manifestFile, err := os.OpenFile(path.Join(blobDir, manifestHashAlgo, manifestHash), os.O_RDWR, 0644)
+	manifestFile, err := os.OpenFile(path.Join(blobDir, manifestHash.Algorithm().String(), manifestHash.Hex()), os.O_RDWR, 0644)
 	if err != nil {
 		return nil, err
 	}
@@ -98,13 +95,10 @@ func LoadImage(ociPath string) (*Image, error) {
 	if err != nil {
 		return nil, err
 	}
-	configHashAlgo, configHash, err := splitHash(i.manifest.Config.Digest)
-	if err != nil {
-		return nil, err
-	}
+	configHash := i.manifest.Config.Digest
 
 	// Open the config, read it, unmarshal it
-	configFile, err := os.OpenFile(path.Join(blobDir, configHashAlgo, configHash), os.O_RDWR, 0644)
+	configFile, err := os.OpenFile(path.Join(blobDir, configHash.Algorithm().String(), configHash.Hex()), os.O_RDWR, 0644)
 	if err != nil {
 		return nil, err
 	}
@@ -121,21 +115,10 @@ func LoadImage(ociPath string) (*Image, error) {
 	return i, nil
 }
 
-func splitHash(hash string) (string, string, error) {
-	pieces := strings.Split(hash, ":")
-	if len(pieces) != 2 {
-		return "", "", fmt.Errorf("error parsing digest in image ref: %q", hash)
-	}
-	return pieces[0], pieces[1], nil
-}
-
 func (i *Image) save() error {
 	// Remove the old config
-	oldConfigHashAlgo, oldConfigHash, err := splitHash(i.manifest.Config.Digest)
-	if err != nil {
-		return err
-	}
-	err = os.Remove(path.Join(i.ociPath, "blobs", oldConfigHashAlgo, oldConfigHash))
+	oldConfigHash := i.manifest.Config.Digest
+	err := os.Remove(path.Join(i.ociPath, "blobs", oldConfigHash.Algorithm().String(), oldConfigHash.Hex()))
 	if err != nil {
 		return err
 	}
@@ -144,15 +127,12 @@ func (i *Image) save() error {
 	if err != nil {
 		return err
 	}
-	i.manifest.Config.Digest = configHashAlgo + ":" + configHash
+	i.manifest.Config.Digest = digest.NewDigestFromHex(configHashAlgo, configHash)
 	i.manifest.Config.Size = int64(configSize)
 
 	// Remove the old manifest
-	oldManifestHashAlgo, oldManifestHash, err := splitHash(i.ref.Digest)
-	if err != nil {
-		return err
-	}
-	err = os.Remove(path.Join(i.ociPath, "blobs", oldManifestHashAlgo, oldManifestHash))
+	oldManifestHash := i.ref.Digest
+	err = os.Remove(path.Join(i.ociPath, "blobs", oldManifestHash.Algorithm().String(), oldManifestHash.Hex()))
 	if err != nil {
 		return err
 	}
@@ -161,7 +141,7 @@ func (i *Image) save() error {
 	if err != nil {
 		return err
 	}
-	i.ref.Digest = manifestHashAlgo + ":" + manifestHash
+	i.ref.Digest = digest.NewDigestFromHex(manifestHashAlgo, manifestHash)
 	i.ref.Size = int64(manifestSize)
 
 	// Remove any old refs
@@ -199,15 +179,16 @@ func (i *Image) GetRef() ociImage.Descriptor {
 	return i.ref
 }
 
-func (i *Image) GetDiffIDs() []string {
+func (i *Image) GetDiffIDs() []digest.Digest {
 	return i.config.RootFS.DiffIDs
 }
 
+// TODO(dalegaard): Make this return []digest.Digest
 func (i *Image) GetLayerDigests() []string {
 	numLayers := len(i.manifest.Layers)
 	layerDigests := make([]string, numLayers, numLayers)
 	for index, layer := range i.manifest.Layers {
-		layerDigests[index] = layer.Digest
+		layerDigests[index] = layer.Digest.String()
 	}
 	return layerDigests
 }
@@ -240,14 +221,12 @@ func (i *Image) Print(w io.Writer, prettyPrint, printConfig bool) error {
 	return nil
 }
 
-func (i *Image) UpdateTopLayer(digestAlgo, layerDigest, diffId string, size int64) (string, error) {
-	var oldLayerDigest string
-	layerDigest = digestAlgo + ":" + layerDigest
-	diffId = digestAlgo + ":" + diffId
+func (i *Image) UpdateTopLayer(layerDigest, diffId digest.Digest, size int64) (digest.Digest, error) {
+	var oldLayerDigest digest.Digest
 	if len(i.config.RootFS.DiffIDs) == 0 {
 		i.config.RootFS = ociImage.RootFS{
 			Type:    "layers",
-			DiffIDs: []string{diffId},
+			DiffIDs: []digest.Digest{diffId},
 		}
 	} else {
 		i.config.RootFS.DiffIDs[len(i.config.RootFS.DiffIDs)-1] = diffId
@@ -270,13 +249,11 @@ func (i *Image) UpdateTopLayer(digestAlgo, layerDigest, diffId string, size int6
 	return oldLayerDigest, i.save()
 }
 
-func (i *Image) NewTopLayer(digestAlgo, layerDigest, diffId string, size int64) error {
-	layerDigest = digestAlgo + ":" + layerDigest
-	diffId = digestAlgo + ":" + diffId
+func (i *Image) NewTopLayer(layerDigest, diffId digest.Digest, size int64) error {
 	if len(i.config.RootFS.DiffIDs) == 0 {
 		i.config.RootFS = ociImage.RootFS{
 			Type:    "layers",
-			DiffIDs: []string{diffId},
+			DiffIDs: []digest.Digest{diffId},
 		}
 	} else {
 		i.config.RootFS.DiffIDs = append(i.config.RootFS.DiffIDs, diffId)

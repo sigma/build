@@ -41,6 +41,7 @@ import (
 	"github.com/appc/spec/schema/types"
 	"github.com/coreos/rkt/pkg/fileutil"
 	"github.com/coreos/rkt/pkg/user"
+	digest "github.com/opencontainers/go-digest"
 	specs "github.com/opencontainers/image-spec/specs-go"
 	ociImage "github.com/opencontainers/image-spec/specs-go/v1"
 )
@@ -258,8 +259,9 @@ func (a *ACBuild) beginWithEmptyOCI() error {
 }
 
 func (a *ACBuild) writeSkeletonRefAndManifest() error {
+	ctime := time.Now()
 	img := ociImage.Image{
-		Created:      time.Now().Format(time.RFC3339),
+		Created:      &ctime,
 		Architecture: runtime.GOARCH,
 		OS:           runtime.GOOS,
 	}
@@ -271,7 +273,6 @@ func (a *ACBuild) writeSkeletonRefAndManifest() error {
 	man := ociImage.Manifest{
 		Versioned: specs.Versioned{
 			SchemaVersion: OCISchemaVersion,
-			MediaType:     ociImage.MediaTypeImageManifest,
 		},
 		Config: ociImage.Descriptor{
 			MediaType: ociImage.MediaTypeImageConfig,
@@ -301,9 +302,9 @@ func (a *ACBuild) writeSkeletonRefAndManifest() error {
 	return a.loadManifest()
 }
 
-func (a *ACBuild) marshalHashAndWrite(data interface{}) (string, int, error) {
+func (a *ACBuild) marshalHashAndWrite(data interface{}) (digest.Digest, int, error) {
 	algo, hash, n, e := util.MarshalHashAndWrite(a.CurrentImagePath, data)
-	return algo + ":" + hash, n, e
+	return digest.NewDigestFromHex(algo, hash), n, e
 }
 
 func (a *ACBuild) beginWithEmptyACI() error {

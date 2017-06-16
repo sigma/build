@@ -18,30 +18,27 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 	"syscall"
 
 	"github.com/containers/build/lib/appc"
 	"github.com/containers/build/lib/oci"
 	"github.com/containers/build/util"
+
+	digest "github.com/opencontainers/go-digest"
+	ociImage "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
 const OCISchemaVersion = 2
 
 const defaultWorkPath = ".acbuild"
 
-type OCILayout struct {
-	imageLayoutVersion string `json:"imageLayoutVersion"`
-}
-
-var OCILayoutValue = OCILayout{"1.0.0"}
+var OCILayoutValue = ociImage.ImageLayout{"1.0.0"}
 
 // BuildMode represents which image spec is being followed during a build, AppC
 // or OCI
@@ -236,38 +233,38 @@ func (a *ACBuild) rehashAndStoreOCIBlob(targetPath string, newLayer bool) error 
 
 	// See https://github.com/opencontainers/image-spec/blob/master/config.md for the difference between layer
 	// digest and DiffID.
-	layerDigest := hex.EncodeToString(layerDigestWriter.Sum(nil))
-	diffId := hex.EncodeToString(diffIdWriter.Sum(nil))
+	layerDigest := digest.NewDigestFromBytes("sha256", layerDigestWriter.Sum(nil))
+	diffId := digest.NewDigestFromBytes("sha256", diffIdWriter.Sum(nil))
 
-	err = os.MkdirAll(path.Join(a.CurrentImagePath, "blobs", "sha256"), 0755)
+	err = os.MkdirAll(path.Join(a.CurrentImagePath, "blobs", layerDigest.Algorithm().String()), 0755)
 	if err != nil {
 		return err
 	}
 
-	err = os.Rename(tmpFile.Name(), path.Join(a.CurrentImagePath, "blobs", "sha256", layerDigest))
+	err = os.Rename(tmpFile.Name(), path.Join(a.CurrentImagePath, "blobs", layerDigest.Algorithm().String(), layerDigest.Hex()))
 	if err != nil {
 		return err
 	}
 
 	blobStorePath := path.Dir(path.Dir(targetPath))
-	err = os.Rename(targetPath, path.Join(blobStorePath, "sha256", layerDigest))
+	err = os.Rename(targetPath, path.Join(blobStorePath, layerDigest.Algorithm().String(), layerDigest.Hex()))
 	if err != nil {
 		return err
 	}
 
-	var oldTopLayerHash string
+	var oldTopLayerHash digest.Digest
 	switch ociMan := a.man.(type) {
 	case *oci.Image:
 		if newLayer {
 			// add a new top layer to the config/manifest
-			err = ociMan.NewTopLayer("sha256", layerDigest, diffId, fsize)
+			err = ociMan.NewTopLayer(layerDigest, diffId, fsize)
 			if err != nil {
 				return err
 			}
 		} else {
 			// update the top layer hash in the config/manifest, and remove the old
 			// top layer
-			oldTopLayerHash, err = ociMan.UpdateTopLayer("sha256", layerDigest, diffId, fsize)
+			oldTopLayerHash, err = ociMan.UpdateTopLayer(layerDigest, diffId, fsize)
 			if err != nil {
 				return err
 			}
@@ -276,7 +273,7 @@ func (a *ACBuild) rehashAndStoreOCIBlob(targetPath string, newLayer bool) error 
 		return fmt.Errorf("mismatch between build mode and manifest type?!")
 	}
 	if !newLayer && oldTopLayerHash != "" {
-		err = os.Remove(path.Join(a.CurrentImagePath, "blobs", strings.Replace(oldTopLayerHash, ":", "/", -1)))
+		err = os.Remove(path.Join(a.CurrentImagePath, "blobs", oldTopLayerHash.Algorithm().String(), oldTopLayerHash.Hex()))
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error removing old top layer, hash %s: %v", oldTopLayerHash, err)
 		}

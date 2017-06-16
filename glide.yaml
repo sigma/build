@@ -76,4 +76,4 @@ import:
 - package: github.com/appc/docker2aci
   version: v0.11.1
 - package: github.com/opencontainers/image-spec
-  version: ~1.0.0-rc3
+  version: ~1.0.0-rc6

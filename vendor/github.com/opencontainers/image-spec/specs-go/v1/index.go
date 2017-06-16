@@ -12,12 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package specs
+package v1
 
-// Versioned provides a struct with the manifest schemaVersion and mediaType.
-// Incoming content with unknown schema version can be decoded against this
-// struct to check the version.
-type Versioned struct {
-	// SchemaVersion is the image manifest schema that this image follows
-	SchemaVersion int `json:"schemaVersion"`
+import "github.com/opencontainers/image-spec/specs-go"
+
+// Index references manifests for various platforms.
+// This structure provides `application/vnd.oci.image.index.v1+json` mediatype when marshalled to JSON.
+type Index struct {
+	specs.Versioned
+
+	// Manifests references platform specific manifests.
+	Manifests []Descriptor `json:"manifests"`
+
+	// Annotations contains arbitrary metadata for the image index.
+	Annotations map[string]string `json:"annotations,omitempty"`
 }

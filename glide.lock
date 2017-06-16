@@ -1,5 +1,5 @@
-hash: ada2b3fbdd717c7a9db32c5cce09fcfce01fa3a98e36b29275ac19c7021f8e1d
-updated: 2017-01-10T12:02:33.878602995-08:00
+hash: d0eaa71a52a173c5127517ec113f69f5157f3e1c816224d3d43258250510db97
+updated: 2017-06-16T23:08:50.890302541+02:00
 imports:
 - name: github.com/appc/docker2aci
   version: 355af275fa8d48b4ecdd361a5feaf173abff81e7
@@ -11,9 +11,9 @@ imports:
   - lib/internal/backend/repository
   - lib/internal/docker
   - lib/internal/tarball
+  - lib/internal/types
   - lib/internal/util
   - pkg/log
-  - lib/internal/types
 - name: github.com/appc/spec
   version: fd5e3d8f5d596c6fbd506e80b5e13ba8a97b704c
   subpackages:
@@ -78,8 +78,10 @@ imports:
   subpackages:
   - diff
   - pretty
+- name: github.com/opencontainers/go-digest
+  version: 279bed98673dd5bef374d3b6e4b09e2af76183bf
 - name: github.com/opencontainers/image-spec
-  version: 3b65d2823d053f93ec790e64416072d6019f30e5
+  version: 1a6593ab6c3ab5902072b4694a22ff19425396ae
   subpackages:
   - specs-go
   - specs-go/v1
@@ -120,4 +122,4 @@ imports:
   - third_party/forked/reflect
 - name: xi2.org/x/xz
   version: 18c6b7129324841d920ee8dc1ab66ec07054998f
-devImports: []
+testImports: []
