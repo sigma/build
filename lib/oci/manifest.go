@@ -197,12 +197,11 @@ func (i *Image) GetDiffIDs() []digest.Digest {
 	return i.config.RootFS.DiffIDs
 }
 
-// TODO(dalegaard): Make this return []digest.Digest
-func (i *Image) GetLayerDigests() []string {
+func (i *Image) GetLayerDigests() []digest.Digest {
 	numLayers := len(i.manifest.Layers)
-	layerDigests := make([]string, numLayers, numLayers)
+	layerDigests := make([]digest.Digest, numLayers, numLayers)
 	for index, layer := range i.manifest.Layers {
-		layerDigests[index] = layer.Digest.String()
+		layerDigests[index] = layer.Digest
 	}
 	return layerDigests
 }

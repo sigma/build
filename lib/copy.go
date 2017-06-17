@@ -22,6 +22,7 @@ import (
 	"github.com/appc/spec/aci"
 	"github.com/coreos/rkt/pkg/fileutil"
 	"github.com/coreos/rkt/pkg/user"
+	digest "github.com/opencontainers/go-digest"
 
 	"github.com/containers/build/lib/oci"
 	"github.com/containers/build/util"
@@ -76,7 +77,7 @@ func (a *ACBuild) copyToDirAppC(froms []string, to string) error {
 }
 
 func (a *ACBuild) expandTopOCILayer() (string, error) {
-	var topLayerID string
+	var topLayerID digest.Digest
 	switch ociMan := a.man.(type) {
 	case *oci.Image:
 		layerIDs := ociMan.GetLayerDigests()
@@ -95,16 +96,11 @@ func (a *ACBuild) expandTopOCILayer() (string, error) {
 			return "", err
 		}
 	} else {
-		topLayerAlgo, topLayerHash, err := util.SplitOCILayerID(topLayerID)
+		err := util.OCIExtractLayers([]digest.Digest{topLayerID}, a.CurrentImagePath, a.OCIExpandedBlobsPath)
 		if err != nil {
 			return "", err
 		}
-
-		err = util.OCIExtractLayers([]string{topLayerID}, a.CurrentImagePath, a.OCIExpandedBlobsPath)
-		if err != nil {
-			return "", err
-		}
-		targetPath = path.Join(a.OCIExpandedBlobsPath, topLayerAlgo, topLayerHash)
+		targetPath = path.Join(a.OCIExpandedBlobsPath, topLayerID.Algorithm().String(), topLayerID.Hex())
 	}
 	return targetPath, nil
 }

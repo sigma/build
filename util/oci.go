@@ -15,39 +15,26 @@
 package util
 
 import (
-	"fmt"
 	"os"
 	"path"
-	"strings"
+
+	digest "github.com/opencontainers/go-digest"
 )
 
-func SplitOCILayerID(layerID string) (string, string, error) {
-	tokens := strings.Split(layerID, ":")
-	if len(tokens) != 2 {
-		return "", "", fmt.Errorf("couldn't parse layer ID %q", layerID)
-	}
-	algo := tokens[0]
-	hash := tokens[1]
-	return algo, hash, nil
-}
-
-func OCIExtractLayers(layerIDs []string, imageLoc, blobsDest string) error {
+func OCIExtractLayers(layerIDs []digest.Digest, imageLoc, blobsDest string) error {
 	for _, layerID := range layerIDs {
-		algo, hash, err := SplitOCILayerID(layerID)
-		if err != nil {
-			return err
-		}
+		algo, hash := layerID.Algorithm().String(), layerID.Hex()
 
 		from := path.Join(imageLoc, "blobs", algo, hash)
 		to := path.Join(blobsDest, algo, hash)
 
-		_, err = os.Stat(to)
+		_, err := os.Stat(to)
 		if err == nil {
 			// This has already been extracted
 			break
 		}
 
-		err = os.MkdirAll(path.Join(blobsDest, algo), 0755)
+		err = os.MkdirAll(to, 0755)
 		if err != nil {
 			return err
 		}

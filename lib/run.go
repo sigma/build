@@ -27,6 +27,7 @@ import (
 
 	"github.com/appc/spec/aci"
 	"github.com/appc/spec/schema/types"
+	digest "github.com/opencontainers/go-digest"
 
 	"github.com/containers/build/engine"
 	"github.com/containers/build/lib/oci"
@@ -191,7 +192,7 @@ func (a *ACBuild) generateOverlayPathsAppC(insecure bool) ([]string, error) {
 }
 
 func (a *ACBuild) generateOverlayPathsOCI() ([]string, error) {
-	var layerDigests []string
+	var layerDigests []digest.Digest
 	switch ociMan := a.man.(type) {
 	case *oci.Image:
 		layerDigests = ociMan.GetLayerDigests()
@@ -212,11 +213,7 @@ func (a *ACBuild) generateOverlayPathsOCI() ([]string, error) {
 			return nil, err
 		}
 		for _, layerID := range layerDigests {
-			algo, hash, err := util.SplitOCILayerID(layerID)
-			if err != nil {
-				return nil, err
-			}
-			layerPaths = append(layerPaths, path.Join(a.OCIExpandedBlobsPath, algo, hash))
+			layerPaths = append(layerPaths, path.Join(a.OCIExpandedBlobsPath, layerID.Algorithm().String(), layerID.Hex()))
 		}
 	}
 	return layerPaths, nil
