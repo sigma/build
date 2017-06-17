@@ -251,7 +251,7 @@ func (i *Image) UpdateTopLayer(layerDigest, diffId digest.Digest, size int64) (d
 	}
 
 	layerDescriptor := ociImage.Descriptor{
-		MediaType: ociImage.MediaTypeImageLayer,
+		MediaType: ociImage.MediaTypeImageLayerGzip,
 		Digest:    layerDigest,
 		Size:      size,
 	}
@@ -279,7 +279,7 @@ func (i *Image) NewTopLayer(layerDigest, diffId digest.Digest, size int64) error
 
 	layerDescriptor :=
 		ociImage.Descriptor{
-			MediaType: ociImage.MediaTypeImageLayer,
+			MediaType: ociImage.MediaTypeImageLayerGzip,
 			Digest:    layerDigest,
 			Size:      size,
 		}
