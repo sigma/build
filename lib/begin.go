@@ -163,7 +163,7 @@ func (a *ACBuild) beginFromLocalImage(start string, mode BuildMode) error {
 	case BuildModeOCI:
 		thingsToCheck = []string{
 			path.Join(a.CurrentImagePath, "oci-layout"),
-			path.Join(a.CurrentImagePath, "refs"),
+			path.Join(a.CurrentImagePath, "index.json"),
 			path.Join(a.CurrentImagePath, "blobs"),
 		}
 	case BuildModeAppC:
@@ -241,11 +241,9 @@ func (a *ACBuild) beginFromLocalDirectory(start string) error {
 }
 
 func (a *ACBuild) beginWithEmptyOCI() error {
-	for _, f := range []string{"blobs/sha256", "refs"} {
-		err := os.MkdirAll(path.Join(a.CurrentImagePath, f), 0755)
-		if err != nil {
-			return err
-		}
+	err := os.MkdirAll(path.Join(a.CurrentImagePath, "blobs/sha256"), 0755)
+	if err != nil {
+		return err
 	}
 	ociLayoutBlob, err := json.Marshal(OCILayoutValue)
 	if err != nil {
@@ -255,10 +253,10 @@ func (a *ACBuild) beginWithEmptyOCI() error {
 	if err != nil {
 		return err
 	}
-	return a.writeSkeletonRefAndManifest()
+	return a.writeSkeletonIndexAndManifest()
 }
 
-func (a *ACBuild) writeSkeletonRefAndManifest() error {
+func (a *ACBuild) writeSkeletonIndexAndManifest() error {
 	ctime := time.Now()
 	img := ociImage.Image{
 		Created:      &ctime,
@@ -272,7 +270,7 @@ func (a *ACBuild) writeSkeletonRefAndManifest() error {
 
 	man := ociImage.Manifest{
 		Versioned: specs.Versioned{
-			SchemaVersion: OCISchemaVersion,
+			SchemaVersion: oci.OCISchemaVersion,
 		},
 		Config: ociImage.Descriptor{
 			MediaType: ociImage.MediaTypeImageConfig,
@@ -285,17 +283,27 @@ func (a *ACBuild) writeSkeletonRefAndManifest() error {
 		return err
 	}
 
-	ref := ociImage.Descriptor{
-		MediaType: ociImage.MediaTypeImageManifest,
-		Digest:    manHash,
-		Size:      int64(manSize),
+	index := ociImage.Index{
+		Versioned: specs.Versioned{
+			SchemaVersion: oci.OCISchemaVersion,
+		},
+		Manifests: []ociImage.Descriptor{
+			{
+				MediaType: ociImage.MediaTypeImageManifest,
+				Digest:    manHash,
+				Size:      int64(manSize),
+				Annotations: map[string]string{
+					oci.AnnotationRefName: "latest",
+				},
+			},
+		},
 	}
-	refBlob, err := json.Marshal(ref)
+	indexBlob, err := json.Marshal(index)
 	if err != nil {
 		return err
 	}
 
-	err = ioutil.WriteFile(path.Join(a.CurrentImagePath, "refs", "latest"), refBlob, 0644)
+	err = ioutil.WriteFile(path.Join(a.CurrentImagePath, "index.json"), indexBlob, 0644)
 	if err != nil {
 		return err
 	}

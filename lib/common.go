@@ -34,8 +34,6 @@ import (
 	ociImage "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
-const OCISchemaVersion = 2
-
 const defaultWorkPath = ".acbuild"
 
 var OCILayoutValue = ociImage.ImageLayout{"1.0.0"}

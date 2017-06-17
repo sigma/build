@@ -25,6 +25,7 @@ import (
 	"github.com/containers/build/util"
 
 	digest "github.com/opencontainers/go-digest"
+	specs "github.com/opencontainers/image-spec/specs-go"
 	ociImage "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
@@ -34,55 +35,59 @@ var (
 	ErrNotFound = fmt.Errorf("element to be removed does not exist in this image")
 )
 
+const OCISchemaVersion = 2
+
+// TODO(lda): This is in newer versions of image-spec/specs-go
+const AnnotationRefName = "org.opencontainers.image.ref.name"
+
 // Manifest is a struct with an open handle to a manifest that it can manipulate
 type Image struct {
 	ociPath  string
 	refName  string
 	config   ociImage.Image
 	manifest ociImage.Manifest
-	ref      ociImage.Descriptor
+	manDesc  ociImage.Descriptor
 }
 
 func LoadImage(ociPath string) (*Image, error) {
 	i := &Image{
 		ociPath: ociPath,
-		refName: "latest",
 	}
 
-	refDir := path.Join(ociPath, "refs")
 	blobDir := path.Join(ociPath, "blobs")
 
-	// Look for refs
-	refFileInfos, err := ioutil.ReadDir(refDir)
+	indexFile, err := os.OpenFile(path.Join(ociPath, "index.json"), os.O_RDWR, 0644)
 	if err != nil {
 		return nil, err
 	}
-	if len(refFileInfos) == 0 {
-		return nil, fmt.Errorf("no refs found in image")
+	defer indexFile.Close()
+	indexBlob, err := ioutil.ReadAll(indexFile)
+	if err != nil {
+		return nil, err
 	}
-	// We need to pick a ref, if there's more than one we don't know which one
-	// the user wishes to modify. Let's just pick the first one.
-	i.refName = path.Base(refFileInfos[0].Name())
+	var index ociImage.Index
+	err = json.Unmarshal(indexBlob, &index)
+	if err != nil {
+		return nil, err
+	}
 
-	// Open the ref file, read it, unmarshal it, and parse the manifest's
-	// hash
-	refFile, err := os.OpenFile(path.Join(refDir, i.refName), os.O_RDWR, 0644)
-	if err != nil {
-		return nil, err
+	// Look for refs, pick the first one we find
+	for _, manifest := range index.Manifests {
+		if manifest.MediaType == ociImage.MediaTypeImageManifest {
+			i.manDesc = manifest
+			if manifest.Annotations != nil && manifest.Annotations[AnnotationRefName] != "" {
+				i.refName = manifest.Annotations[AnnotationRefName]
+			}
+			break
+		}
 	}
-	defer refFile.Close()
-	refBlob, err := ioutil.ReadAll(refFile)
-	if err != nil {
-		return nil, err
+	if len(i.manDesc.Digest) == 0 {
+		return nil, fmt.Errorf("no manifests found in image")
 	}
-	err = json.Unmarshal(refBlob, &i.ref)
-	if err != nil {
-		return nil, err
-	}
-	manifestHash := i.ref.Digest
 
 	// Open the manifest, read it, unmarshal it, and parse the config's hash
-	manifestFile, err := os.OpenFile(path.Join(blobDir, manifestHash.Algorithm().String(), manifestHash.Hex()), os.O_RDWR, 0644)
+	manDigest := &i.manDesc.Digest
+	manifestFile, err := os.OpenFile(path.Join(blobDir, manDigest.Algorithm().String(), manDigest.Hex()), os.O_RDWR, 0644)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +136,7 @@ func (i *Image) save() error {
 	i.manifest.Config.Size = int64(configSize)
 
 	// Remove the old manifest
-	oldManifestHash := i.ref.Digest
+	oldManifestHash := i.manDesc.Digest
 	err = os.Remove(path.Join(i.ociPath, "blobs", oldManifestHash.Algorithm().String(), oldManifestHash.Hex()))
 	if err != nil {
 		return err
@@ -141,25 +146,34 @@ func (i *Image) save() error {
 	if err != nil {
 		return err
 	}
-	i.ref.Digest = digest.NewDigestFromHex(manifestHashAlgo, manifestHash)
-	i.ref.Size = int64(manifestSize)
+	i.manDesc.Digest = digest.NewDigestFromHex(manifestHashAlgo, manifestHash)
+	i.manDesc.Size = int64(manifestSize)
 
-	// Remove any old refs
-	err = os.RemoveAll(path.Join(i.ociPath, "refs"))
-	if err != nil {
-		return err
-	}
-	err = os.Mkdir(path.Join(i.ociPath, "refs"), 0755)
-	if err != nil {
-		return err
+	// Update the index
+	var idxManAnnotations map[string]string
+	if i.refName != "" {
+		idxManAnnotations = map[string]string{AnnotationRefName: i.refName}
 	}
 
-	// Write the ref
-	refBlob, err := json.Marshal(i.ref)
+	index := ociImage.Index{
+		Versioned: specs.Versioned{
+			SchemaVersion: OCISchemaVersion,
+		},
+		Manifests: []ociImage.Descriptor{
+			{
+				MediaType:   ociImage.MediaTypeImageManifest,
+				Digest:      i.manDesc.Digest,
+				Size:        int64(i.manDesc.Size),
+				Annotations: idxManAnnotations,
+			},
+		},
+	}
+	indexBlob, err := json.Marshal(index)
 	if err != nil {
 		return err
 	}
-	err = ioutil.WriteFile(path.Join(i.ociPath, "refs", i.refName), refBlob, 0644)
+
+	err = ioutil.WriteFile(path.Join(i.ociPath, "index.json"), indexBlob, 0644)
 	if err != nil {
 		return err
 	}
@@ -175,8 +189,8 @@ func (i *Image) GetManifest() ociImage.Manifest {
 	return i.manifest
 }
 
-func (i *Image) GetRef() ociImage.Descriptor {
-	return i.ref
+func (i *Image) GetRefName() string {
+	return i.refName
 }
 
 func (i *Image) GetDiffIDs() []digest.Digest {
