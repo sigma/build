@@ -157,7 +157,7 @@ func (a *ACBuild) Run(cmd []string, workingDir string, insecure bool, runEngine 
 		return err
 	}
 
-	err = a.mirrorLocalZoneInfo()
+	err = a.mirrorLocalZoneInfo(chrootDir)
 	if err != nil {
 		return err
 	}
@@ -350,7 +350,7 @@ func genDeplist(acipath string, reg registry.Registry) ([]string, error) {
 	return deps, nil
 }
 
-func (a *ACBuild) mirrorLocalZoneInfo() error {
+func (a *ACBuild) mirrorLocalZoneInfo(chrootDir string) error {
 	zif, err := filepath.EvalSymlinks("/etc/localtime")
 	if err != nil {
 		return err
@@ -362,7 +362,7 @@ func (a *ACBuild) mirrorLocalZoneInfo() error {
 	}
 	defer src.Close()
 
-	destp := filepath.Join(a.CurrentImagePath, aci.RootfsDir, zif)
+	destp := filepath.Join(a.CurrentImagePath, chrootDir, zif)
 
 	if err = os.MkdirAll(filepath.Dir(destp), 0755); err != nil {
 		return err
