@@ -320,6 +320,10 @@ func (a *ACBuild) writeSkeletonIndexAndManifest() error {
 				Annotations: map[string]string{
 					oci.AnnotationRefName: "latest",
 				},
+				Platform: &ociImage.Platform{
+					Architecture: runtime.GOARCH,
+					OS:           runtime.GOOS,
+				},
 			},
 		},
 	}

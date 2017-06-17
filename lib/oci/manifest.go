@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"runtime"
 
 	"github.com/containers/build/util"
 
@@ -165,6 +166,10 @@ func (i *Image) save() error {
 				Digest:      i.manDesc.Digest,
 				Size:        int64(i.manDesc.Size),
 				Annotations: idxManAnnotations,
+				Platform: &ociImage.Platform{
+					Architecture: runtime.GOARCH,
+					OS:           runtime.GOOS,
+				},
 			},
 		},
 	}
