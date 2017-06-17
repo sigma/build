@@ -16,15 +16,57 @@ package util
 
 import (
 	"archive/tar"
+	"crypto/tls"
 	"fmt"
 	"io"
+	"mime"
+	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/appc/spec/aci"
+	"github.com/coreos/pkg/progressutil"
 	rkttar "github.com/coreos/rkt/pkg/tar"
 	"github.com/coreos/rkt/pkg/user"
 )
+
+func DownloadFile(uri string, insecure bool, w io.Writer) error {
+	u, err := url.Parse(uri)
+	if err != nil {
+		return err
+	}
+	if u.Scheme == "http" && !insecure {
+		return fmt.Errorf("Won't download from HTTP without --insecure")
+	}
+	name := filepath.Base(u.Path)
+
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: insecure,
+		},
+	}
+	client := &http.Client{Transport: tr}
+	resp, err := client.Get(uri)
+	if err != nil {
+		return err
+	}
+
+	// If the server specified a content disposition, try to get the name from
+	// there. Just a small cosmetic improvement.
+	disphdr := resp.Header.Get("Content-Disposition")
+	if disphdr != "" {
+		_, params, err := mime.ParseMediaType(disphdr)
+		if err == nil && params["filename"] != "" {
+			name = params["filename"]
+		}
+	}
+
+	copier := progressutil.NewCopyProgressPrinter()
+	copier.AddCopy(resp.Body, name, resp.ContentLength, w)
+	return copier.PrintAndWait(os.Stderr, 500*time.Millisecond, nil)
+}
 
 // RmAndMkdir will remove anything at path if it exists, and then create a
 // directory at path.

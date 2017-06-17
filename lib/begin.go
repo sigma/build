@@ -124,16 +124,12 @@ func (a *ACBuild) Begin(start string, insecure bool, mode BuildMode) (err error)
 				return a.beginFromLocalImage(start, mode)
 			}
 		} else {
-			if mode == BuildModeOCI {
-				// TODO: fix this!
-				return fmt.Errorf("cannot start from remote OCI images currently")
-			}
 			dockerPrefix := "docker://"
 			if strings.HasPrefix(start, dockerPrefix) {
 				start = strings.TrimPrefix(start, dockerPrefix)
-				return a.beginFromRemoteDockerImage(start, insecure)
+				return a.beginFromRemoteDockerImage(start, insecure, mode)
 			}
-			return a.beginFromRemoteImage(start, insecure)
+			return a.beginFromRemoteImage(start, insecure, mode)
 		}
 	}
 	switch mode {
@@ -424,7 +420,38 @@ func (a *ACBuild) writeEmptyManifest() error {
 	return a.loadManifest()
 }
 
-func (a *ACBuild) beginFromRemoteImage(start string, insecure bool) error {
+func (a *ACBuild) beginFromRemoteImage(start string, insecure bool, mode BuildMode) error {
+	switch mode {
+	case BuildModeAppC:
+		return a.beginACIFromRemoteImage(start, insecure)
+	case BuildModeOCI:
+		return a.beginOCIFromRemoteImage(start, insecure)
+	}
+	return fmt.Errorf("Unknown build mode '%s'", mode)
+}
+
+// NOTE(lda): There's not currently a defined discovery mode for a remote OCI,
+// but we can use a simple HTTP(S) fetch. While this is not as secure as the ACI
+// based signing system, it is no less secure than a standard Docker registry.
+func (a *ACBuild) beginOCIFromRemoteImage(start string, insecure bool) error {
+	f, err := ioutil.TempFile("", "acbuild-oci-fetch_")
+	if err != nil {
+		return err
+	}
+	defer func() {
+		os.Remove(f.Name())
+		f.Close()
+	}()
+
+	err = util.DownloadFile(start, insecure, f)
+	if err != nil {
+		return err
+	}
+
+	return a.beginFromLocalImage(f.Name(), BuildModeOCI)
+}
+
+func (a *ACBuild) beginACIFromRemoteImage(start string, insecure bool) error {
 	app, err := discovery.NewAppFromString(start)
 	if err != nil {
 		return err
@@ -487,7 +514,21 @@ func (a *ACBuild) beginFromRemoteImage(start string, insecure bool) error {
 	return util.ExtractImage(path.Join(tmpDepStoreTarPath, files[0].Name()), a.CurrentImagePath, nil)
 }
 
-func (a *ACBuild) beginFromRemoteDockerImage(start string, insecure bool) (err error) {
+func (a *ACBuild) beginFromRemoteDockerImage(start string, insecure bool, mode BuildMode) (err error) {
+	switch mode {
+	case BuildModeAppC:
+		return a.beginACIFromRemoteDockerImage(start, insecure)
+	case BuildModeOCI:
+		return a.beginOCIFromRemoteDockerImage(start, insecure)
+	}
+	return fmt.Errorf("Unknown build mode '%s'", mode)
+}
+
+func (a *ACBuild) beginOCIFromRemoteDockerImage(start string, insecure bool) (err error) {
+	return fmt.Errorf("OCI docker not implemented")
+}
+
+func (a *ACBuild) beginACIFromRemoteDockerImage(start string, insecure bool) (err error) {
 	outputDir, err := ioutil.TempDir("", "acbuild")
 	if err != nil {
 		return err
