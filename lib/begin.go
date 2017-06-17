@@ -119,7 +119,7 @@ func (a *ACBuild) Begin(start string, insecure bool, mode BuildMode) (err error)
 			case err != nil:
 				return err
 			case finfo.IsDir():
-				return a.beginFromLocalDirectory(start)
+				return a.beginFromLocalDirectory(start, mode)
 			default:
 				return a.beginFromLocalImage(start, mode)
 			}
@@ -226,7 +226,36 @@ func (a *ACBuild) startedFromTar(mode BuildMode) error {
 	return fmt.Errorf("unknown build mode: %s", mode)
 }
 
-func (a *ACBuild) beginFromLocalDirectory(start string) error {
+func (a *ACBuild) beginFromLocalDirectory(start string, mode BuildMode) error {
+	switch mode {
+	case BuildModeAppC:
+		return a.beginACIFromLocalDirectory(start)
+	case BuildModeOCI:
+		return a.beginOCIFromLocalDirectory(start)
+	}
+	return fmt.Errorf("unknown build mode: %s", mode)
+}
+
+func (a *ACBuild) beginOCIFromLocalDirectory(start string) error {
+	err := a.beginWithEmptyOCI()
+	if err != nil {
+		return nil
+	}
+
+	fis, err := ioutil.ReadDir(start)
+	if err != nil {
+		return err
+	}
+
+	var froms []string
+	for _, fi := range fis {
+		froms = append(froms, path.Join(start, fi.Name()))
+	}
+
+	return a.copyToDirOCI(froms, "/")
+}
+
+func (a *ACBuild) beginACIFromLocalDirectory(start string) error {
 	err := os.MkdirAll(a.CurrentImagePath, 0755)
 	if err != nil {
 		return err
