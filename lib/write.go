@@ -44,6 +44,10 @@ func (a *ACBuild) Write(output string, overwrite bool) (id string, err error) {
 		}
 	}()
 
+	if a.Mode == BuildModeOCI {
+		a.RehashTopLayer()
+	}
+
 	if a.Mode == BuildModeAppC {
 		man, err := util.GetManifest(a.CurrentImagePath)
 		if err != nil {

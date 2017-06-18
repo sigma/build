@@ -80,10 +80,7 @@ func (a *ACBuild) expandTopOCILayer() (string, error) {
 	var topLayerID digest.Digest
 	switch ociMan := a.man.(type) {
 	case *oci.Image:
-		layerIDs := ociMan.GetLayerDigests()
-		if len(layerIDs) > 0 {
-			topLayerID = layerIDs[len(layerIDs)-1]
-		}
+		topLayerID = ociMan.GetTopLayerDigest()
 	default:
 		return "", fmt.Errorf("internal error: mismatched manifest type and build mode???")
 	}
@@ -134,7 +131,7 @@ func (a *ACBuild) copyToDirOCI(froms []string, to string) error {
 		}
 	}
 
-	return a.rehashAndStoreOCIBlob(currentLayer, false)
+	return nil
 }
 
 // CopyToTarget will copy a single file/directory from the from string to the
@@ -192,6 +189,6 @@ func (a *ACBuild) copyToTargetOCI(from string, to string) error {
 		return err
 	}
 
-	return a.rehashAndStoreOCIBlob(targetPath, false)
+	return nil
 
 }

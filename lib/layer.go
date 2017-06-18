@@ -20,6 +20,18 @@ import (
 	"github.com/containers/build/util"
 )
 
+func (a *ACBuild) RehashTopLayer() (err error) {
+	if a.Mode != BuildModeOCI {
+		return fmt.Errorf("only OCIs need to rehash the top layer")
+	}
+
+	currentLayer, err := a.expandTopOCILayer()
+	if err != nil {
+		return err
+	}
+	return a.rehashAndStoreOCIBlob(currentLayer, false)
+}
+
 func (a *ACBuild) NewLayer() (err error) {
 	if err = a.lock(); err != nil {
 		return err
@@ -33,6 +45,8 @@ func (a *ACBuild) NewLayer() (err error) {
 	if a.Mode != BuildModeOCI {
 		return fmt.Errorf("adding layers is currently only supported in OCI builds")
 	}
+
+	a.RehashTopLayer()
 
 	newLayer, err := util.OCINewExpandedLayer(a.OCIExpandedBlobsPath)
 	if err != nil {

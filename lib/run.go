@@ -167,13 +167,6 @@ func (a *ACBuild) Run(cmd []string, workingDir string, insecure bool, runEngine 
 		return err
 	}
 
-	if a.Mode == BuildModeOCI {
-		err = a.rehashAndStoreOCIBlob(depPaths[len(depPaths)-1], false)
-		if err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
