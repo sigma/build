@@ -362,7 +362,7 @@ func (a *ACBuild) mirrorLocalZoneInfo(chrootDir string) error {
 	}
 	defer src.Close()
 
-	destp := filepath.Join(a.CurrentImagePath, chrootDir, zif)
+	destp := filepath.Join(chrootDir, zif)
 
 	if err = os.MkdirAll(filepath.Dir(destp), 0755); err != nil {
 		return err
