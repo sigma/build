@@ -167,6 +167,10 @@ func (a *ACBuild) Run(cmd []string, workingDir string, insecure bool, runEngine 
 		return err
 	}
 
+	if a.Mode == BuildModeOCI {
+		return a.MarkLayerDirty(depPaths[len(depPaths)-1])
+	}
+
 	return nil
 }
 

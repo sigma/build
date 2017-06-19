@@ -16,20 +16,60 @@ package lib
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path"
+	"strings"
 
+	"github.com/containers/build/lib/oci"
 	"github.com/containers/build/util"
+	digest "github.com/opencontainers/go-digest"
 )
+
+func (a *ACBuild) MarkLayerDirty(layerDir string) (err error) {
+	if strings.HasSuffix(layerDir, "new-layer") {
+		return nil
+	}
+	return ioutil.WriteFile(layerDir+".dirty", nil, 0644)
+}
 
 func (a *ACBuild) RehashTopLayer() (err error) {
 	if a.Mode != BuildModeOCI {
 		return fmt.Errorf("only OCIs need to rehash the top layer")
 	}
 
+	var topLayerID digest.Digest
+	switch ociMan := a.man.(type) {
+	case *oci.Image:
+		topLayerID = ociMan.GetTopLayerDigest()
+	default:
+		return fmt.Errorf("internal error: mismatched manifest type and build mode???")
+	}
+
+	var markerPath string
+	if topLayerID != "" {
+		markerPath = path.Join(a.OCIExpandedBlobsPath, topLayerID.Algorithm().String(), topLayerID.Hex()+".dirty")
+		_, err := os.Stat(markerPath)
+		if err != nil && os.IsNotExist(err) {
+			// Dirty marker does not exist
+			return nil
+		}
+		// Dirty marker exists, or other error -> do the rehash
+	}
+
 	currentLayer, err := a.expandTopOCILayer()
 	if err != nil {
 		return err
 	}
-	return a.rehashAndStoreOCIBlob(currentLayer, false)
+	err = a.rehashAndStoreOCIBlob(currentLayer, false)
+	if err != nil {
+		return err
+	}
+	err = os.Remove(markerPath)
+	if err != nil {
+		return fmt.Errorf("could not remove dirty marker: %v", err)
+	}
+	return nil
 }
 
 func (a *ACBuild) NewLayer() (err error) {
