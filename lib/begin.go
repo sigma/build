@@ -39,10 +39,10 @@ import (
 	"github.com/appc/spec/discovery"
 	"github.com/appc/spec/schema"
 	"github.com/appc/spec/schema/types"
-	"github.com/coreos/rkt/pkg/fileutil"
-	"github.com/coreos/rkt/pkg/user"
 	specs "github.com/opencontainers/image-spec/specs-go"
 	ociImage "github.com/opencontainers/image-spec/specs-go/v1"
+	"github.com/rkt/rkt/pkg/fileutil"
+	"github.com/rkt/rkt/pkg/user"
 )
 
 var (

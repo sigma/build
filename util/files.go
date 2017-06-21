@@ -22,8 +22,8 @@ import (
 	"path/filepath"
 
 	"github.com/appc/spec/aci"
-	rkttar "github.com/coreos/rkt/pkg/tar"
-	"github.com/coreos/rkt/pkg/user"
+	rkttar "github.com/rkt/rkt/pkg/tar"
+	"github.com/rkt/rkt/pkg/user"
 )
 
 // RmAndMkdir will remove anything at path if it exists, and then create a

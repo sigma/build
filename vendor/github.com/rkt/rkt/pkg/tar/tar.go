@@ -26,9 +26,9 @@ import (
 	"syscall"
 
 	"github.com/appc/spec/pkg/device"
-	"github.com/coreos/rkt/pkg/fileutil"
-	"github.com/coreos/rkt/pkg/user"
 	"github.com/hashicorp/errwrap"
+	"github.com/rkt/rkt/pkg/fileutil"
+	"github.com/rkt/rkt/pkg/user"
 )
 
 const DEFAULT_DIR_MODE os.FileMode = 0755

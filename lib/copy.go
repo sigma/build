@@ -20,8 +20,8 @@ import (
 	"path"
 
 	"github.com/appc/spec/aci"
-	"github.com/coreos/rkt/pkg/fileutil"
-	"github.com/coreos/rkt/pkg/user"
+	"github.com/rkt/rkt/pkg/fileutil"
+	"github.com/rkt/rkt/pkg/user"
 
 	"github.com/containers/build/lib/oci"
 	"github.com/containers/build/util"

@@ -36,7 +36,7 @@ imports:
   subpackages:
   - dlopen
   - progressutil
-- name: github.com/coreos/rkt
+- name: github.com/rkt/rkt
   version: d6874f787c60b3b4593e58030a2a20b55cc763e2
   subpackages:
   - pkg/fileutil
