@@ -38,7 +38,7 @@ const OCISchemaVersion = 2
 const defaultWorkPath = ".acbuild"
 
 type OCILayout struct {
-	imageLayoutVersion string `json:"imageLayoutVersion"`
+	ImageLayoutVersion string `json:"imageLayoutVersion"`
 }
 
 var OCILayoutValue = OCILayout{"1.0.0"}
