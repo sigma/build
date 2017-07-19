@@ -26,7 +26,7 @@ import (
 	"text/tabwriter"
 	"text/template"
 
-	"github.com/coreos/rkt/pkg/multicall"
+	"github.com/rkt/rkt/pkg/multicall"
 	"github.com/spf13/cobra"
 
 	"github.com/containers/build/lib"

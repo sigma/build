@@ -255,7 +255,7 @@ func (a *ACBuild) getEnvVarsOCI() (map[string]string, error) {
 	}
 }
 
-// stolen from github.com/coreos/rkt/common/common.go
+// stolen from github.com/rkt/rkt/common/common.go
 // supportsOverlay returns whether the system supports overlay filesystem
 func supportsOverlay() bool {
 	f, err := os.Open("/proc/filesystems")

@@ -28,8 +28,8 @@ import (
 
 	"github.com/appc/spec/aci"
 	"github.com/coreos/pkg/progressutil"
-	rkttar "github.com/coreos/rkt/pkg/tar"
-	"github.com/coreos/rkt/pkg/user"
+	rkttar "github.com/rkt/rkt/pkg/tar"
+	"github.com/rkt/rkt/pkg/user"
 )
 
 func DownloadFile(uri string, insecure bool, w io.Writer) error {

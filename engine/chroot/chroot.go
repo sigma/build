@@ -20,8 +20,8 @@ import (
 	"path/filepath"
 
 	"github.com/containers/build/engine"
-	"github.com/coreos/rkt/pkg/fileutil"
-	"github.com/coreos/rkt/pkg/multicall"
+	"github.com/rkt/rkt/pkg/fileutil"
+	"github.com/rkt/rkt/pkg/multicall"
 )
 
 type Engine struct{}

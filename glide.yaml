@@ -17,8 +17,8 @@ import:
   - semver
 - package: github.com/coreos/ioprogress
   version: e7fc03058804de5488baed8df5b89f3924b9ec9a
-- package: github.com/coreos/rkt
-  version: v1.9.0
+- package: github.com/rkt/rkt
+  version: v1.27.0
   subpackages:
   - pkg/fileutil
   - pkg/group

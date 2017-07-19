@@ -1,5 +1,5 @@
-hash: df187fb4124298b8012204f64e17e3b8f6b1cccc650fe31b8a09950fa40587b3
-updated: 2017-07-19T13:30:10.688236126-07:00
+hash: 4096c582f86c80f9868cd4889f33ffce103d886870914f0457fb19be61e45ebb
+updated: 2017-07-19T15:02:35.525091899-07:00
 imports:
 - name: github.com/appc/docker2aci
   version: 355af275fa8d48b4ecdd361a5feaf173abff81e7
@@ -35,16 +35,6 @@ imports:
   version: 8dbaa491b063ed47e2474b5363de0c0db91cf9f2
   subpackages:
   - progressutil
-- name: github.com/coreos/rkt
-  version: d6874f787c60b3b4593e58030a2a20b55cc763e2
-  subpackages:
-  - pkg/fileutil
-  - pkg/group
-  - pkg/multicall
-  - pkg/passwd
-  - pkg/sys
-  - pkg/tar
-  - pkg/user
 - name: github.com/cpuguy83/go-md2man
   version: 71acacd42f85e5e82f70a55327789582a5200a90
   subpackages:
@@ -84,6 +74,16 @@ imports:
   subpackages:
   - specs-go
   - specs-go/v1
+- name: github.com/rkt/rkt
+  version: aab7ece56084422864bbfb6d61b47ad35226b96c
+  subpackages:
+  - pkg/fileutil
+  - pkg/group
+  - pkg/multicall
+  - pkg/passwd
+  - pkg/sys
+  - pkg/tar
+  - pkg/user
 - name: github.com/russross/blackfriday
   version: 300106c228d52c8941d4b3de6054a6062a86dda3
 - name: github.com/shurcooL/sanitized_anchor_name
