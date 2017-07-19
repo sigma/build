@@ -1,5 +1,5 @@
-hash: d0eaa71a52a173c5127517ec113f69f5157f3e1c816224d3d43258250510db97
-updated: 2017-06-16T23:08:50.890302541+02:00
+hash: df187fb4124298b8012204f64e17e3b8f6b1cccc650fe31b8a09950fa40587b3
+updated: 2017-07-19T13:30:10.688236126-07:00
 imports:
 - name: github.com/appc/docker2aci
   version: 355af275fa8d48b4ecdd361a5feaf173abff81e7
@@ -32,9 +32,8 @@ imports:
 - name: github.com/coreos/ioprogress
   version: e7fc03058804de5488baed8df5b89f3924b9ec9a
 - name: github.com/coreos/pkg
-  version: 7f080b6c11ac2d2347c3cd7521e810207ea1a041
+  version: 8dbaa491b063ed47e2474b5363de0c0db91cf9f2
   subpackages:
-  - dlopen
   - progressutil
 - name: github.com/coreos/rkt
   version: d6874f787c60b3b4593e58030a2a20b55cc763e2
@@ -81,7 +80,7 @@ imports:
 - name: github.com/opencontainers/go-digest
   version: 279bed98673dd5bef374d3b6e4b09e2af76183bf
 - name: github.com/opencontainers/image-spec
-  version: 1a6593ab6c3ab5902072b4694a22ff19425396ae
+  version: ab7389ef9f50030c9b245bc16b981c7ddf192882
   subpackages:
   - specs-go
   - specs-go/v1
