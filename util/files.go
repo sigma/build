@@ -107,9 +107,9 @@ func ExtractImage(path, dst string, fileMap map[string]struct{}) error {
 
 	uidRange := user.NewBlankUidRange()
 
-	if os.Geteuid() == 0 {
-		return rkttar.ExtractTar(dr, dst, true, uidRange, fileMap)
-	}
+//	if os.Geteuid() == 0 {
+//		return rkttar.ExtractTar(dr, dst, true, uidRange, fileMap)
+//	}
 
 	editor, err := rkttar.NewUidShiftingFilePermEditor(uidRange)
 	if err != nil {
